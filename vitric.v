@@ -1,8 +1,8 @@
 // A simple irc library for V
 module vitric
 
+import log
 import net
-import ifndev.flogs
 
 // The main structure, that holds a complete IRC connection.
 struct IRC {
@@ -11,7 +11,8 @@ pub:
 	nick   string = 'vitric' // Nick
 	user   string = 'asmithee' // Username
 	host   string // Hostname
-	logger flogs.Logger // The logger, it is public to allow customization of logs.
+pub mut:
+	logger log.Log // The logger, it is public to allow customization of logs.
 }
 
 // This struct holds a message.
@@ -26,15 +27,13 @@ pub:
 // This function creates a new IRC connection to given host and port.
 // SSL is not taken care of for now, but adding support for it shouldn't break the API.
 pub fn new(host string, port int, nick, user, hostname string) ?IRC {
-	l := flogs.Logger{
-		min_logging_level: .verbose
-	}
-	l.log('Starting up', .info)
+	mut l := log.Log{level: .debug}
+	l.info('Starting up')
 	s := dial(host, port) or {
-		l.log("Couldn't connect to $host:$port", .critical)
+		l.fatal("Couldn't connect to $host:$port")
 		panic("Couldn't connect")
 	}
-	l.log('Connected', .verbose)
+	l.debug('Connected')
 	conn := IRC{
 		socket: s
 		nick: nick
@@ -43,39 +42,39 @@ pub fn new(host string, port int, nick, user, hostname string) ?IRC {
 		logger: l
 	}
 	s.send_string('NICK $nick\nUSER $nick $hostname $user :vitric\n') or {
-		l.log("Couldn't identify", .critical)
+		l.fatal("Couldn't identify")
 		exit(1)
 	}
 	return conn
 }
 
 // Closes the IRC connection properly
-pub fn (irc IRC) close() {
-	irc.logger.log('Gracefully quitting', .info)
+pub fn (mut irc IRC) close() {
+	irc.logger.info('Gracefully quitting')
 	irc.raw('QUIT')
 	irc.socket.close() or {
-		irc.logger.log('Error closing socket', .warning)
+		irc.logger.warn('Error closing socket')
 	}
 }
 
 // Sends a raw message given as a string to the server through the irc connection.
-pub fn (irc IRC) raw(message string) {
+pub fn (mut irc IRC) raw(message string) {
 	irc.socket.send_string(message) or {
-		irc.logger.log("Couldn't send '$message'", .warning)
+		irc.logger.warn("Couldn't send '$message'")
 	}
 }
 
 // Reads the connection and returns a message if there is one, or a completely empty one.
-pub fn (irc IRC) read_message() Message {
+pub fn (mut irc IRC) read_message() Message {
 	s := irc.socket.read_line()
 	parsed := parse_message(s) or {
-		irc.logger.log("Couldn't parse message $s", .warning)
+		irc.logger.warn("Couldn't parse message $s")
 		Message{
 			command: .notamessage
 		}
 	}
 	if parsed.command != .notamessage { // we got a message, so we log it.
-		irc.logger.log(s[0..s.len - 1], .verbose)
+		irc.logger.debug(s[0..s.len - 1])
 	}
 	return parsed
 }
