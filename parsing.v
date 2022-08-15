@@ -17,9 +17,8 @@ fn parse_message(raw string) ?Message {
 	if !has_prefix {
 		return parse_no_prefix(raw, command)
 	}
-	if has_prefix {
-		return parse_prefix(raw, command)
-	}
+
+	return parse_prefix(raw, command)
 }
 
 // COMMAND specific parsing functions
@@ -44,11 +43,9 @@ fn parse_no_prefix(m string, c Command) ?Message {
 
 fn parse_prefix(raw string, c Command) ?Message {
 	s := raw.split_nth(' ', 2)
-	m := parse_no_prefix(s[1], c) or {
-		return Message{
-			command: .notamessage
-		}
-	}
+	m := parse_no_prefix(s[1], c) or { return Message{
+		command: .notamessage
+	} }
 	return Message{
 		prefix: s[0][1..s[0].len]
 		command: m.command
@@ -236,7 +233,7 @@ fn ident_command(c string) (Command, bool) {
 }
 
 // see rfc1459 and https://en.wikipedia.org/wiki/list_of_internet_relay_chat_commands
-enum Command {
+pub enum Command {
 	notamessage
 	admin
 	away
