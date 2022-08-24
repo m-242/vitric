@@ -1,12 +1,12 @@
 import m242.vitric
 
 fn main() {
-	i := vitric.new('irc.freenode.net', 6667, 'vbot-m242-vitric', 'vbot', '0.0.0.0') or {
+	mut i := vitric.new('irc.freenode.net', 6667, 'vbot-m242-vitric', 'vbot', '0.0.0.0') or {
 		panic("Couldn't connect")
 	}
-	i.logger.log('got a connection', .verbose)
+	i.logger.debug('got a connection')
 	i.raw('PRIVMSG m242 :bitch please\n')
-	i.logger.log('sent startup message', .verbose)
+	i.logger.debug('sent startup message')
 	mut msg := i.read_message()
 	for true {
 		match msg.command {
@@ -14,14 +14,14 @@ fn main() {
 				s := extract_sender(msg.prefix)
 				raw := 'PRIVMSG $s :$msg.content'
 				i.raw('$raw\n')
-				i.logger.log('SENT: $raw', .info)
+				i.logger.info('SENT: $raw')
 			}
 			.ping {
 				i.raw('PONG $msg.content')
-				i.logger.log('got pinged, ponged back', .verbose)
+				i.logger.debug('got pinged, ponged back')
 			}
 			.quit {
-				i.logger.log('Received QUIT message from server', .error)
+				i.logger.error('Received QUIT message from server')
 				i.close()
 				exit(1)
 			}
